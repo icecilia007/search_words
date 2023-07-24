@@ -1,26 +1,12 @@
 package br.com.projetobackmavensearchwords.maven;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import org.apache.http.HttpResponse;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.client.config.CookieSpecs;
-
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 
 public class SearchWords {
 
@@ -29,99 +15,68 @@ public class SearchWords {
         String url = "";
         String frase = "";
         String conteudo = "";
+        char opcao = 'n';
         int contagemFrase  = 0;
         Map<String, Integer> repeticoesPalavras;
 
         Scanner ent = new Scanner(System.in);
-
+        
+        System.out.println("Gostaria de pesquisar por todo texto visivel? ");
+        opcao = ent.nextLine().toLowerCase().charAt(0);
+        
         System.out.println("Digite a URL: ");
         url = ent.nextLine();
 
         System.out.println("Digite uma frase para pesquisa: ");
         frase = ent.nextLine();
 
-
-        Document document = Jsoup.connect(url).get();
-        conteudo = findMainContent(document);
+        conteudo = findMainContent(url,opcao);
         
-        System.out.println(conteudo);
         contagemFrase = contarRepeticoes(conteudo, frase);
+        System.out.println("\"" + frase + "\" ⇒ repete " + contagemFrase + " vezes");
         
         repeticoesPalavras = contarRepeticoesPalavras(frase,conteudo);
-        
         for(String palavra:repeticoesPalavras.keySet()) {
           System.out.println("\"" + palavra + "\" ⇒ repete " + repeticoesPalavras.get(palavra) + " vezes");
         }
-//        contagemFrase = countSubstringOccurrences(conteudo, frase);
-//        System.out.println("\"" + frase + "\" ⇒ repete " + contagemFrase + " vezes");
-//
-//        String[] words = frase.split("\\s+");
-//        
-//        Map<String, Integer> contagemPalavras = countWordOccurrences(conteudo,words);
-//        for (String palavra : contagemPalavras.keySet()) {
-//            System.out.println("\"" + palavra + "\" ⇒ repete " + contagemPalavras.get(palavra) + " vezes");
-//        }
-
         ent.close();
     }
-    private static String findMainContent(Document doc) {
-        Element mainElement = doc.selectFirst("main");
-        if (mainElement != null) {
-            return mainElement.text();
-        }
-        return doc.body().text();
-    }
-    private static int countSubstringOccurrences(String text, String substring) {
-        int count = 0;
-        int index = 0;
-        while ((index = text.indexOf(substring, index)) != -1) {
-            index += substring.length();
-            count++;
-        }
-        return count;
-    }
-    private static Map<String, Integer> countWordOccurrences(String text, String[] words) {
-        Map<String, Integer> wordOccurrences = new HashMap<>();
-        for (String word : words) {
-            int count = countSubstringOccurrences(text, word);
-            wordOccurrences.put(word, count);
-        }
-        return wordOccurrences;
-    }
-    
-    private static int contarRepeticoes(String conteudo, String frase) {
-        int cont = 0;
-        String conteudoTexto = extrairTexto(conteudo); // Obtém apenas o texto do conteúdo, ignorando as tags HTML
-        int index = conteudoTexto.toLowerCase().indexOf(frase.toLowerCase());
-        while (index != -1) {
-            cont++;
-            index = conteudoTexto.toLowerCase().indexOf(frase.toLowerCase(), index + 1);
-        }
-        return cont;
-    }
-
-    private static Map<String, Integer> contarRepeticoesPalavras(String frase, String conteudo) {
-        Map<String, Integer> repeticoes = new HashMap<>();
-        String conteudoTexto = extrairTexto(conteudo); // Obtém apenas o texto do conteúdo, ignorando as tags HTML
-        String[] palavrasFrase = frase.split("\\s+"); // Divide a frase em palavras usando espaço como delimitador
-
-        for (String palavra : palavrasFrase) {
-            int contador = 0;
-            int index = conteudoTexto.indexOf(palavra);
-            while (index != -1) {
-                contador++;
-                index = conteudoTexto.indexOf(palavra, index + 1);
+     static String findMainContent(String url, char opcao) throws IOException {
+        Document document = Jsoup.connect(url).get();
+        if(opcao == 'n') {
+        	Element mainElement = document.selectFirst("main");
+            if (mainElement != null) {
+                return mainElement.text();
             }
-            repeticoes.put(palavra, contador);
+            return document.body().text();
         }
-
-        return repeticoes;
+        return document.text();
     }
+     static int contarRepeticoes(String conteudo, String frase) {
+    	    int cont = 0;
+    	    int index = conteudo.indexOf(frase);
+    	    while (index != -1) {
+    	        cont++;
+    	        index = conteudo.indexOf(frase, index + 1);
+    	    }
+    	    return cont;
+    	}
+     
+     static Map<String, Integer> contarRepeticoesPalavras(String frase, String conteudo) {
+    	    Map<String, Integer> repeticoes = new HashMap<>();
+    	    String[] palavrasFrase = frase.split("\\W+");
+    	    String[] palavrasConteudo = conteudo.split("\\W+");
 
-    private static String extrairTexto(String conteudo) {
-        // Expressão regular para extrair o texto da página ignorando as tags HTML
-        Pattern pattern = Pattern.compile("<.*?>", Pattern.DOTALL);
-        Matcher matcher = pattern.matcher(conteudo);
-        return matcher.replaceAll("");
-    }
+    	    for (String palavraFrase : palavrasFrase) {
+    	        int contador = 0;
+    	        for (String palavraConteudo : palavrasConteudo) {
+    	            if (palavraConteudo.equals(palavraFrase)) {
+    	                contador++;
+    	            }
+    	        }
+    	        repeticoes.put(palavraFrase, contador);
+    	    }
+
+    	    return repeticoes;
+    	}
 }
