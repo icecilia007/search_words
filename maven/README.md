@@ -1,3 +1,2 @@
-#  maven
+#  Estrutura do projeto
 
-Add instructions for project developers here.
