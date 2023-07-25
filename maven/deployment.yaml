@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: searchwords-deployment-v2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: searchwords
+  template:
+    metadata:
+      labels:
+        app: searchwords
+    spec:
+      containers:
+      - name: searchwords
+        image: icecilia007/searchwords:v2
+        ports:
+        - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: searchwords-service-v2
+spec:
+  selector:
+    app: searchwords
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8080
